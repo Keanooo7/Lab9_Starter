@@ -1,26 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lab 9</title>
-
   <style>
     button {
       margin: 3px;
     }
-
     button:hover {
       cursor: pointer;
     }
-
     #first-num,
     #second-num {
       width: 60px;
     }
-
     output {
       border: 1px solid gray;
       display: block;
@@ -29,26 +24,22 @@
       padding: 5px;
       width: 240px;
     }
-
     main {
       width: 800px;
     }
-
     #error-btns {
-      column-gap: 5px;
       display: flex;
       flex-wrap: wrap;
-      margin-top: 30px;
       row-gap: 5px;
+      column-gap: 5px;
+      margin-top: 30px;
     }
-
-    #error-btns>* {
+    #error-btns > * {
       padding: 8px 2px;
       width: 122px;
     }
   </style>
 </head>
-
 <body>
   <main>
     <form>
@@ -56,52 +47,285 @@
         <legend>Error Calculator</legend>
         <input name="first-num" id="first-num" />
         <select name="operator" id="operator">
-          <option>+</option>
-          <option>-</option>
-          <option>*</option>
-          <option>/</option>
+          <option value="+">+</option>
+          <option value="-">−</option>
+          <option value="*">×</option>
+          <option value="/">÷</option>
         </select>
         <input name="second-num" id="second-num" />
-        <button id="calculate">Calculate</button>
+        <button type="submit" id="calculate">Calculate</button>
         <br />
         <output></output>
       </fieldset>
     </form>
 
     <section id="error-btns">
-      <button>Console Log</button>
-      <button>Console Error</button>
-      <button>Console Count</button>
-      <button>Console Warn</button>
-      <button>Console Assert</button>
-      <button>Console Clear</button>
-      <button>Console Dir</button>
-      <button>Console dirxml</button>
-      <button>Console Group Start</button>
-      <button>Console Group End</button>
-      <button>Console Table</button>
-      <button>Start Timer</button>
-      <button>End Timer</button>
-      <button>Console Trace</button>
-      <button>Trigger a Global Error</button>
+      <button type="button" id="btn-log">Console Log</button>
+      <button type="button" id="btn-error">Console Error</button>
+      <button type="button" id="btn-count">Console Count</button>
+      <button type="button" id="btn-warn">Console Warn</button>
+      <button type="button" id="btn-assert">Console Assert</button>
+      <button type="button" id="btn-clear">Console Clear</button>
+      <button type="button" id="btn-dir">Console Dir</button>
+      <button type="button" id="btn-dirxml">Console Dirxml</button>
+      <button type="button" id="btn-group-start">Console Group Start</button>
+      <button type="button" id="btn-group-end">Console Group End</button>
+      <button type="button" id="btn-table">Console Table</button>
+      <button type="button" id="btn-start-timer">Start Timer</button>
+      <button type="button" id="btn-end-timer">End Timer</button>
+      <button type="button" id="btn-trace">Console Trace</button>
+      <button type="button" id="btn-global-error">Trigger a Global Error</button>
+      <button type="button" id="btn-trycatch">Try/Catch Demo</button>
+      <button type="button" id="btn-custom-error">Custom Error Demo</button>
+      <button type="button" id="btn-trackjs-test">Test TrackJS</button>
     </section>
   </main>
 
+  <!-- TrackJS Integration -->
+  <script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
   <script>
-    let form = document.querySelector('form');
-    form.addEventListener('submit', e => {
+    window.TrackJS && TrackJS.install({ 
+      token: "3351077bdc1f4ff9811df09a09d2b7d0",
+      application: "lab-9"
+      // for more configuration options, see https://docs.trackjs.com
+    });
+  </script>
+
+  <script>
+    // 1. Calculator Logic with Enhanced Error Handling
+    const form = document.querySelector('form');
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
-      let output = document.querySelector('output');
-      let firstNum = document.querySelector('#first-num').value;
-      let secondNum = document.querySelector('#second-num').value;
-      let operator = document.querySelector('#operator').value;
-      output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+      const output = document.querySelector('output');
+      const firstNum = document.querySelector('#first-num').value;
+      const secondNum = document.querySelector('#second-num').value;
+      const operator = document.querySelector('#operator').value;
+      
+      try {
+        // Enhanced validation using custom error
+        const num1 = validateNumberInput(firstNum, 'first-num');
+        const num2 = validateNumberInput(secondNum, 'second-num');
+        
+        // Check for division by zero
+        if (operator === '/' && num2 === 0) {
+          throw new ValidationError("Cannot divide by zero", "second-num");
+        }
+        
+        const result = eval(`${num1} ${operator} ${num2}`);
+        output.innerHTML = result;
+        
+        // Track successful calculation
+        window.TrackJS && TrackJS.track('Calculation completed successfully');
+        
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          console.error(`Validation Error in ${error.field}: ${error.message}`);
+          output.innerHTML = `Error: ${error.message}`;
+          // Track validation error
+          window.TrackJS && TrackJS.track({
+            message: `Validation Error: ${error.message}`,
+            field: error.field
+          });
+        } else {
+          console.error('Calculation error:', error.message);
+          output.innerHTML = `Error: ${error.message}`;
+          // Track unexpected error
+          window.TrackJS && TrackJS.track(`Unexpected calculation error: ${error.message}`);
+        }
+      }
     });
 
-    let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
+    // 2. Sample Data for Console Demos
+    const sampleUser = {
+      id: 123,
+      name: "John Doe",
+      role: "developer",
+      skills: ["JavaScript", "React", "Node.js"],
+      active: true,
+      lastLogin: new Date(),
+      age: 30
+    };
 
-    // Start your code here
-    // You may move this JS to another file if you wish
+    const sampleTableData = [
+      { name: "Alice", age: 28, department: "Engineering", salary: 75000 },
+      { name: "Bob", age: 34, department: "Design", salary: 65000 },
+      { name: "Carol", age: 29, department: "Marketing", salary: 70000 }
+    ];
+
+    let clickCounter = 0;
+
+    // 3. Console Method Handlers
+
+    // Console Log
+    document.getElementById('btn-log').addEventListener('click', () => {
+      console.log("Console log demo", sampleUser);
+    });
+
+    // Console Error
+    document.getElementById('btn-error').addEventListener('click', () => {
+      console.error("Console Error Demo");
+    });
+
+    // Console Count
+    document.getElementById('btn-count').addEventListener('click', () => {
+      clickCounter++;
+      console.count("Count Button");
+    });
+
+    // Console Warn
+    document.getElementById('btn-warn').addEventListener('click', () => {
+      console.warn("This is a warning message");
+    });
+
+    // Console Assert
+    document.getElementById('btn-assert').addEventListener('click', () => {
+      console.assert(false, "Assertion failed demo");
+    });
+
+    // Console Clear
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      console.clear();
+    });
+
+    // Console Dir
+    document.getElementById('btn-dir').addEventListener('click', () => {
+      console.dir(sampleUser);
+    });
+
+    // Console Dirxml
+    document.getElementById('btn-dirxml').addEventListener('click', () => {
+      console.dirxml(document.querySelector('form'));
+    });
+
+    // Console Group Start
+    document.getElementById('btn-group-start').addEventListener('click', () => {
+      console.group("Group Demo");
+      console.log("Inside group");
+    });
+
+    // Console Group End
+    document.getElementById('btn-group-end').addEventListener('click', () => {
+      console.groupEnd();
+    });
+
+    // Console Table
+    document.getElementById('btn-table').addEventListener('click', () => {
+      console.table(sampleTableData);
+    });
+
+    // Start Timer
+    document.getElementById('btn-start-timer').addEventListener('click', () => {
+      console.time("Demo Timer");
+    });
+
+    // End Timer
+    document.getElementById('btn-end-timer').addEventListener('click', () => {
+      console.timeEnd("Demo Timer");
+    });
+
+    // Console Trace
+    document.getElementById('btn-trace').addEventListener('click', () => {
+      console.trace("Stack trace demo");
+    });
+
+    // 4. Global Error Trigger (Enhanced with TrackJS)
+    document.getElementById('btn-global-error').addEventListener('click', () => {
+      // This will be caught by both the global error handler and TrackJS
+      throw new Error("Deliberate global error for testing TrackJS and global handler");
+    });
+
+    // 5. Try/Catch Demo
+    document.getElementById('btn-trycatch').addEventListener('click', () => {
+      try {
+        // Example: force an error
+        JSON.parse("not valid JSON");
+      } catch (error) {
+        console.error("Caught in try/catch:", error.message);
+        // Track the handled error
+        window.TrackJS && TrackJS.track(`Try/catch demo error: ${error.message}`);
+      } finally {
+        console.log("Finally block executed");
+      }
+    });
+
+    // 6. Custom Error Class
+    class ValidationError extends Error {
+      constructor(message, field) {
+        super(message);
+        this.name = "ValidationError";
+        this.field = field;
+      }
+    }
+
+    // Enhanced validation function
+    function validateNumberInput(input, fieldName) {
+      if (input === null || input === undefined || input.trim() === '') {
+        throw new ValidationError("Input cannot be empty", fieldName);
+      }
+      if (isNaN(input)) {
+        throw new ValidationError("Input is not a valid number", fieldName);
+      }
+      return Number(input);
+    }
+
+    // 7. Custom Error Demo Button
+    document.getElementById('btn-custom-error').addEventListener('click', () => {
+      try {
+        // Simulate invalid input scenario
+        validateNumberInput("abc", "demo-field");
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          console.error(`Custom Error Demo - ${error.name}: ${error.message} (Field: ${error.field})`);
+          // Track custom error
+          window.TrackJS && TrackJS.track({
+            message: `Custom ValidationError: ${error.message}`,
+            field: error.field,
+            errorType: 'ValidationError'
+          });
+        }
+      }
+    });
+
+    // 8. TrackJS Test Button
+    document.getElementById('btn-trackjs-test').addEventListener('click', () => {
+      // Test TrackJS tracking with custom message
+      if (window.TrackJS) {
+        TrackJS.track('Testing TrackJS integration - Manual test button clicked!');
+        console.log('TrackJS test message sent successfully');
+      } else {
+        console.error('TrackJS not loaded');
+      }
+    });
+
+    // 9. Enhanced Global Error Handler
+    window.addEventListener("error", (event) => {
+      console.error("Global error caught:", event.message);
+      console.error("Error details:", {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error
+      });
+      
+      // TrackJS will automatically catch this, but we can add additional context
+      if (window.TrackJS) {
+        TrackJS.track({
+          message: `Global error: ${event.message}`,
+          filename: event.filename,
+          line: event.lineno,
+          column: event.colno
+        });
+      }
+    });
+
+    // 10. Initialize TrackJS with welcome message
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.TrackJS) {
+        TrackJS.track('Lab 9 application loaded successfully');
+        console.log('TrackJS initialized and ready for error tracking');
+      }
+    });
   </script>
 </body>
 
